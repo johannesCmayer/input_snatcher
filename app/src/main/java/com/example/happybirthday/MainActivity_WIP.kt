@@ -7,17 +7,24 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
+import java.net.InetAddress
 import java.net.Socket
 
 class MainActivity : AppCompatActivity() {
     lateinit var editText : EditText
     lateinit var client: Socket
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Thread.sleep(10_000)
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_login)
+        setContentView(R.layout.activity_main)
 
+        val policy = ThreadPolicy.Builder().permitAll().build()
+        StrictMode.setThreadPolicy(policy)
 
-        var address = "filo.local"
+        var server_hostname = "Filo.local"
+        val address: InetAddress = InetAddress.getByName(server_hostname)
+        println("Resorved $server_hostname to $address.hostAddress")
+
         var START_PORT = 10940
         var END_PORT = START_PORT + 100
         for (i in START_PORT..END_PORT) {
@@ -33,14 +40,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        startActivity(R.layout.activity_main)
-        setContentView()
-
-        val policy = ThreadPolicy.Builder().permitAll().build()
-        StrictMode.setThreadPolicy(policy)
-
-        // Thread.sleep(10_000)
-
 
         title = "Input Snatcher"
         editText = findViewById(R.id.editText)
