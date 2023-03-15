@@ -1,18 +1,32 @@
 package com.example.happybirthday
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.ThreadPolicy
 import android.text.Editable
 import android.text.TextWatcher
+import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import java.lang.Math.min
 import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.net.Socket
 
 class MainActivity : AppCompatActivity() {
     lateinit var editText : EditText
     lateinit var client: Socket
+
+    fun triggerRestart(context: Activity) {
+        val intent = Intent(context, MainActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Thread.sleep(10_000)
         super.onCreate(savedInstanceState)
@@ -21,24 +35,48 @@ class MainActivity : AppCompatActivity() {
         val policy = ThreadPolicy.Builder().permitAll().build()
         StrictMode.setThreadPolicy(policy)
 
-        var server_hostname = "Filo.local"
-        val address: InetAddress = InetAddress.getByName(server_hostname)
-        println("Resorved $server_hostname to $address.hostAddress")
+        var addresses = mutableListOf(
+            "192.168.209.225", // Motoko hotspot
+            "169.254.199.182", // Trajan
+        )
+
+        try {
+            var server_hostname = "Filo.local"
+            val host_name_address: InetAddress = InetAddress.getByName(server_hostname)
+            addresses.add(host_name_address.toString())
+        }
+        catch (e: java.lang.Exception) {}
 
         var START_PORT = 10940
-        var END_PORT = START_PORT + 100
-        for (i in START_PORT..END_PORT) {
-            try {
-                println("Checking port: $i")
-                client = Socket(address, i)
-                println("Using port: $i")
-                break
-            }
-            catch (e: java.lang.Exception) {
-                if (i == END_PORT) {
-                    throw java.lang.Exception("No port found")
+        var END_PORT = START_PORT + 15
+
+        var msg = ""
+        var breaking = false
+        for (port in START_PORT..END_PORT) {
+            for (address in addresses) {
+                try {
+                    println("Checking if server is at: $address:$port")
+                    client = Socket()
+                    client.connect(InetSocketAddress(address, port), 1000)
+                    msg = "Server found at: $address:$port"
+                    breaking = true
+                    if (breaking) {break}
+                } catch (e: java.lang.Exception) {
+                    println(e.toString())
+                    if (port == END_PORT) {
+                        msg = "No server found. No input will be send."
+                    }
                 }
             }
+            if (breaking) {break}
+        }
+        println(msg)
+        var ip_status: TextView = findViewById(R.id.textView)
+        ip_status.text = msg
+
+        var restart_button: Button = findViewById(R.id.restart_button)
+        restart_button.setOnClickListener {
+            triggerRestart(this)
         }
 
         title = "Input Snatcher"
@@ -55,7 +93,7 @@ class MainActivity : AppCompatActivity() {
                                        before: Int, count: Int) {
 
                 var diff: Int = previous_editText.length
-                for (i in 0..(previous_editText.length-1)) {
+                for (i in 0..min(previous_editText.length-1, s.length-1)) {
                     println(previous_editText.length.toString())
                     println(s[i].toString() + previous_editText[i].toString())
                     print((s[i] != previous_editText[i]).toString())
@@ -65,7 +103,7 @@ class MainActivity : AppCompatActivity() {
                         break
                     }
                 }
-
+// Hello there yo whot testing thes thing now you
                 println("diff: " + diff.toString())
 
 
