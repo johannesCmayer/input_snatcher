@@ -7,6 +7,7 @@ import android.os.StrictMode
 import android.os.StrictMode.ThreadPolicy
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -28,16 +29,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Thread.sleep(10_000)
+//        Thread.sleep(10_000)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         val policy = ThreadPolicy.Builder().permitAll().build()
         StrictMode.setThreadPolicy(policy)
 
+        title = "Input Snatcher"
+        editText = findViewById(R.id.editText)
+        var previous_editText: CharSequence = ""
+
+        editText.setFocusableInTouchMode(true);
+        editText.requestFocus();
+
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+
         var addresses = mutableListOf(
-            "192.168.209.225", // Motoko hotspot
-            "169.254.199.182", // Trajan
+            // Motoko hotspot
+            "192.168.209.225",
+            // Trajan
+            "192.168.5.250",
+            "169.254.199.182",
         )
 
         try {
@@ -57,7 +70,7 @@ class MainActivity : AppCompatActivity() {
                 try {
                     println("Checking if server is at: $address:$port")
                     client = Socket()
-                    client.connect(InetSocketAddress(address, port), 1000)
+                    client.connect(InetSocketAddress(address, port), 100)
                     msg = "Server found at: $address:$port"
                     breaking = true
                     if (breaking) {break}
@@ -79,9 +92,8 @@ class MainActivity : AppCompatActivity() {
             triggerRestart(this)
         }
 
-        title = "Input Snatcher"
-        editText = findViewById(R.id.editText)
-        var previous_editText: CharSequence = ""
+        var context = this
+
         editText.addTextChangedListener(object: TextWatcher {
             override fun afterTextChanged(s: Editable) {}
 
@@ -115,7 +127,12 @@ class MainActivity : AppCompatActivity() {
                     msg = "<<backspace:"+ (before - count).toString() + ">>"
                 }
 
-                client.outputStream.write(msg.toByteArray())
+                try {
+                    client.outputStream.write(msg.toByteArray())
+                }
+                catch (e: java.lang.Error) {
+                    triggerRestart(context)
+                }
                 previous_editText = s.toString()
             }
         })
